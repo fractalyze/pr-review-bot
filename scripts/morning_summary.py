@@ -7,16 +7,32 @@ from __future__ import annotations
 import os
 import sys
 from collections import defaultdict
+from pathlib import Path
+
+import yaml
 
 from scripts import github_client, slack_client, user_mapper, format_slack
 
 ORG = "fractalyze"
+CONFIG_PATH = Path(__file__).parent.parent / "config.yml"
+
+
+def _load_repo_whitelist() -> list[str]:
+    """Load whitelisted repo names from config.yml."""
+    if not CONFIG_PATH.exists():
+        raise RuntimeError(f"Config file not found: {CONFIG_PATH}")
+    with open(CONFIG_PATH) as f:
+        config = yaml.safe_load(f)
+    repos = config.get("repos") or []
+    if not repos:
+        print("WARNING: no repos configured in config.yml", file=sys.stderr)
+    return repos
 
 
 def _collect_pending_reviews() -> (
     tuple[dict[str, list[dict]], dict[str, list[dict]]]
 ):
-    """Scan all org repos and collect pending review information.
+    """Scan whitelisted repos and collect pending review information.
 
     Returns:
         (pending_by_repo, pending_by_reviewer)
@@ -26,12 +42,12 @@ def _collect_pending_reviews() -> (
     pending_by_repo: dict[str, list[dict]] = defaultdict(list)
     pending_by_reviewer: dict[str, list[dict]] = defaultdict(list)
 
-    repos = github_client.list_org_repos(ORG)
-    print(f"Scanning {len(repos)} repositories in {ORG}...")
+    repo_names = _load_repo_whitelist()
+    print(f"Scanning {len(repo_names)} whitelisted repositories in {ORG}...")
 
-    for repo in repos:
-        repo_name = repo["full_name"]
-        owner, name = repo_name.split("/")
+    for name in repo_names:
+        repo_name = f"{ORG}/{name}"
+        owner = ORG
 
         try:
             prs = github_client.list_open_prs(owner, name)

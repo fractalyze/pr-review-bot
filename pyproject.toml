@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "PR Review Slack Notification Bot for fractalyze org"
 requires-python = ">=3.11"
 dependencies = [
+    "pyyaml>=6.0",
     "slack-sdk>=3.27.0",
 ]
 

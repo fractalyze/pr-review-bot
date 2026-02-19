@@ -4,7 +4,7 @@ Slack notification bot for pending PR reviews in the fractalyze org.
 
 ## Features
 
-- **Morning Summary** (weekdays 9 AM KST): scans all org repos, sends
+- **Morning Summary** (weekdays 9 AM KST): scans whitelisted repos, sends
   individual DMs to reviewers and a summary to #pr-reviews channel
 - **Real-time Notification**: when a reviewer is assigned to a PR, sends a
   Slack DM immediately
@@ -15,7 +15,7 @@ Slack notification bot for pending PR reviews in the fractalyze org.
 
 ```
 fractalyze/pr-review-bot (this repo)
-├── Morning Summary: cron → GH API org scan → Slack DMs + channel table
+├── Morning Summary: cron → scan whitelisted repos → Slack DMs + channel table
 ├── Re-request Notify: per-repo caller workflow → reusable workflow → Slack DM
 └── Comment Re-request: /re-request comment → API review request + Slack DM
 
@@ -42,7 +42,17 @@ Each member repo:
 | `PR_REVIEW_SLACK_BOT_TOKEN` | Slack Bot OAuth Token (`xoxb-...`) |
 | `SLACK_SUMMARY_CHANNEL_ID` | Channel ID for daily summary (e.g., `C01234ABC`) |
 
-### 3. Deploy Caller Workflows
+### 3. Configure Repos
+
+Edit `config.yml` to whitelist repos to monitor:
+
+```yaml
+repos:
+  - zkx
+  - riscv-witness
+```
+
+### 4. Deploy Caller Workflows
 
 ```bash
 # Preview

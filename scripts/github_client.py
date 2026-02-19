@@ -78,11 +78,6 @@ def _parse_next_link(link_header: str) -> str | None:
     return None
 
 
-def list_org_repos(org: str) -> list[dict[str, Any]]:
-    """List all repositories in an organization."""
-    return _paginate(f"/orgs/{org}/repos?type=all")
-
-
 def list_open_prs(owner: str, repo: str) -> list[dict[str, Any]]:
     """List open pull requests for a repository."""
     return _paginate(f"/repos/{owner}/{repo}/pulls?state=open")

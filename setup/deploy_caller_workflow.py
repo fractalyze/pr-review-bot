@@ -1,6 +1,6 @@
 # Copyright 2026 Fractalyze Inc. All rights reserved.
 
-"""Deploy the caller workflow to all repos in the fractalyze org."""
+"""Deploy the caller workflow to whitelisted repos in the fractalyze org."""
 
 from __future__ import annotations
 
@@ -8,16 +8,17 @@ import argparse
 import base64
 import json
 import os
-import sys
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+import yaml
 
 API_BASE = "https://api.github.com"
 ORG = "fractalyze"
 WORKFLOW_PATH = ".github/workflows/pr-review-notify.yml"
 TEMPLATE = Path(__file__).parent / "caller_workflow_template.yml"
-SKIP_REPOS = {"pr-review-bot", ".github"}
+CONFIG_PATH = Path(__file__).parent.parent / "config.yml"
 
 
 def _token() -> str:
@@ -45,17 +46,15 @@ def _request(method: str, path: str, body: dict | None = None) -> dict | None:
         raise
 
 
-def _list_repos() -> list[str]:
-    repos: list[str] = []
-    page = 1
-    while True:
-        result = _request("GET", f"/orgs/{ORG}/repos?type=all&per_page=100&page={page}")
-        if not result:
-            break
-        repos.extend(r["name"] for r in result if r["name"] not in SKIP_REPOS)
-        if len(result) < 100:
-            break
-        page += 1
+def _load_repo_whitelist() -> list[str]:
+    """Load whitelisted repo names from config.yml."""
+    if not CONFIG_PATH.exists():
+        raise RuntimeError(f"Config file not found: {CONFIG_PATH}")
+    with open(CONFIG_PATH) as f:
+        config = yaml.safe_load(f)
+    repos = config.get("repos") or []
+    if not repos:
+        raise RuntimeError("No repos configured in config.yml")
     return repos
 
 
@@ -96,8 +95,8 @@ def main() -> None:
     args = parser.parse_args()
 
     content = TEMPLATE.read_text()
-    repos = _list_repos()
-    print(f"Found {len(repos)} repos in {ORG} (excluding {SKIP_REPOS})\n")
+    repos = _load_repo_whitelist()
+    print(f"Deploying to {len(repos)} whitelisted repos in {ORG}\n")
 
     for repo in sorted(repos):
         _deploy(repo, content, args.dry_run)
