@@ -1,0 +1,54 @@
+# Copyright 2026 Fractalyze Inc. All rights reserved.
+
+name: Handle Comment Re-request
+
+on:
+  workflow_call:
+    inputs:
+      comment_body:
+        required: true
+        type: string
+      pr_number:
+        required: true
+        type: string
+      repo_name:
+        required: true
+        type: string
+      comment_id:
+        required: true
+        type: string
+      sender_login:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: true
+      SLACK_BOT_TOKEN:
+        required: true
+
+jobs:
+  rerequest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: fractalyze/pr-review-bot
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install slack-sdk
+
+      - name: Process re-request comment
+        run: python -m scripts.comment_rerequest
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          COMMENT_BODY: ${{ inputs.comment_body }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          REPO_NAME: ${{ inputs.repo_name }}
+          COMMENT_ID: ${{ inputs.comment_id }}
+          SENDER_LOGIN: ${{ inputs.sender_login }}

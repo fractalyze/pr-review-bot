@@ -1,0 +1,28 @@
+# Copyright 2026 Fractalyze Inc. All rights reserved.
+
+name: Morning PR Review Summary
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5' # 9 AM KST (UTC+9), weekdays only
+  workflow_dispatch: # manual trigger for testing
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install slack-sdk
+
+      - name: Run morning summary
+        run: python -m scripts.morning_summary
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_SUMMARY_CHANNEL_ID: ${{ secrets.SLACK_SUMMARY_CHANNEL_ID }}

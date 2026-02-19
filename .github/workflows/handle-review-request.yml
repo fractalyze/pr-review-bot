@@ -1,0 +1,58 @@
+# Copyright 2026 Fractalyze Inc. All rights reserved.
+
+name: Handle Review Request
+
+on:
+  workflow_call:
+    inputs:
+      pr_url:
+        required: true
+        type: string
+      pr_title:
+        required: true
+        type: string
+      pr_number:
+        required: true
+        type: string
+      repo_name:
+        required: true
+        type: string
+      reviewer_login:
+        required: true
+        type: string
+      requested_by_login:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: true
+      SLACK_BOT_TOKEN:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: fractalyze/pr-review-bot
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install slack-sdk
+
+      - name: Send Slack DM to reviewer
+        run: python -m scripts.notify_reviewer
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_URL: ${{ inputs.pr_url }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          REPO_NAME: ${{ inputs.repo_name }}
+          REVIEWER_LOGIN: ${{ inputs.reviewer_login }}
+          REQUESTED_BY_LOGIN: ${{ inputs.requested_by_login }}
