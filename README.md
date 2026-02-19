@@ -39,7 +39,7 @@ Each member repo:
 | Secret | Description |
 |--------|-------------|
 | `GH_PAT` | Fine-grained PAT with `repo`, `read:org`, `read:user` scopes |
-| `SLACK_BOT_TOKEN` | Slack Bot OAuth Token (`xoxb-...`) |
+| `PR_REVIEW_SLACK_BOT_TOKEN` | Slack Bot OAuth Token (`xoxb-...`) |
 | `SLACK_SUMMARY_CHANNEL_ID` | Channel ID for daily summary (e.g., `C01234ABC`) |
 
 ### 3. Deploy Caller Workflows

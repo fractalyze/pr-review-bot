@@ -24,5 +24,5 @@ jobs:
         run: python -m scripts.morning_summary
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_REVIEW_SLACK_BOT_TOKEN: ${{ secrets.PR_REVIEW_SLACK_BOT_TOKEN }}
           SLACK_SUMMARY_CHANNEL_ID: ${{ secrets.SLACK_SUMMARY_CHANNEL_ID }}

@@ -15,9 +15,9 @@ _client: WebClient | None = None
 def _get_client() -> WebClient:
     global _client
     if _client is None:
-        token = os.environ.get("SLACK_BOT_TOKEN", "")
+        token = os.environ.get("PR_REVIEW_SLACK_BOT_TOKEN", "")
         if not token:
-            raise RuntimeError("SLACK_BOT_TOKEN environment variable is not set")
+            raise RuntimeError("PR_REVIEW_SLACK_BOT_TOKEN environment variable is not set")
         _client = WebClient(token=token)
     return _client
 

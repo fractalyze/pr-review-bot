@@ -21,7 +21,7 @@ jobs:
       requested_by_login: ${{ github.event.sender.login }}
     secrets:
       GH_PAT: ${{ secrets.GH_PAT }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      PR_REVIEW_SLACK_BOT_TOKEN: ${{ secrets.PR_REVIEW_SLACK_BOT_TOKEN }}
 
   handle-rerequest-comment:
     if: >-
@@ -37,4 +37,4 @@ jobs:
       sender_login: ${{ github.event.sender.login }}
     secrets:
       GH_PAT: ${{ secrets.GH_PAT }}
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      PR_REVIEW_SLACK_BOT_TOKEN: ${{ secrets.PR_REVIEW_SLACK_BOT_TOKEN }}

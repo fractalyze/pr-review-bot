@@ -26,7 +26,7 @@ on:
     secrets:
       GH_PAT:
         required: true
-      SLACK_BOT_TOKEN:
+      PR_REVIEW_SLACK_BOT_TOKEN:
         required: true
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
         run: python -m scripts.notify_reviewer
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_REVIEW_SLACK_BOT_TOKEN: ${{ secrets.PR_REVIEW_SLACK_BOT_TOKEN }}
           PR_URL: ${{ inputs.pr_url }}
           PR_TITLE: ${{ inputs.pr_title }}
           PR_NUMBER: ${{ inputs.pr_number }}
