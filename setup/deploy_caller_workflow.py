@@ -66,32 +66,34 @@ def _file_exists(repo: str) -> str | None:
     return None
 
 
-def _deploy(repo: str, content: str, dry_run: bool) -> None:
+def _deploy(repo: str, content: str, *, dry_run: bool, force: bool) -> None:
     existing_sha = _file_exists(repo)
-    if existing_sha:
-        print(f"  SKIP {repo} (already exists)")
+    if existing_sha and not force:
+        print(f"  SKIP {repo} (already exists, use --force to update)")
         return
 
+    action = "update" if existing_sha else "create"
     if dry_run:
-        print(f"  DRY-RUN {repo} (would create {WORKFLOW_PATH})")
+        print(f"  DRY-RUN {repo} (would {action} {WORKFLOW_PATH})")
         return
 
     encoded = base64.b64encode(content.encode()).decode()
-    _request(
-        "PUT",
-        f"/repos/{ORG}/{repo}/contents/{WORKFLOW_PATH}",
-        {
-            "message": "ci: add PR review notification workflow",
-            "content": encoded,
-            "branch": "main",
-        },
-    )
-    print(f"  DEPLOYED {repo}")
+    body: dict = {
+        "message": f"ci: {action} PR review notification workflow",
+        "content": encoded,
+        "branch": "main",
+    }
+    if existing_sha:
+        body["sha"] = existing_sha
+
+    _request("PUT", f"/repos/{ORG}/{repo}/contents/{WORKFLOW_PATH}", body)
+    print(f"  {'UPDATED' if existing_sha else 'DEPLOYED'} {repo}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Deploy caller workflow to org repos")
     parser.add_argument("--dry-run", action="store_true", help="Preview without deploying")
+    parser.add_argument("--force", action="store_true", help="Update existing workflow files")
     args = parser.parse_args()
 
     content = TEMPLATE.read_text()
@@ -99,7 +101,7 @@ def main() -> None:
     print(f"Deploying to {len(repos)} whitelisted repos in {ORG}\n")
 
     for repo in sorted(repos):
-        _deploy(repo, content, args.dry_run)
+        _deploy(repo, content, dry_run=args.dry_run, force=args.force)
 
     print("\nDone.")
 
