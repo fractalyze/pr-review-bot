@@ -56,6 +56,9 @@ def _collect_pending_reviews() -> (
             continue
 
         for pr in prs:
+            if pr.get("draft"):
+                continue
+
             try:
                 reviewer_data = github_client.get_requested_reviewers(
                     owner, name, pr["number"]
