@@ -18,14 +18,20 @@ CONFIG_PATH = Path(__file__).parent.parent / "config.yml"
 
 
 def _load_repo_whitelist() -> list[str]:
-    """Load whitelisted repo names from config.yml."""
+    """Load whitelisted repo names from env var or config.yml."""
+    env_repos = os.environ.get("MONITORED_REPOS", "")
+    if env_repos:
+        return [r.strip() for r in env_repos.split(",") if r.strip()]
+
     if not CONFIG_PATH.exists():
-        raise RuntimeError(f"Config file not found: {CONFIG_PATH}")
+        raise RuntimeError(
+            "MONITORED_REPOS env var not set and config file not found"
+        )
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
     repos = config.get("repos") or []
     if not repos:
-        print("WARNING: no repos configured in config.yml", file=sys.stderr)
+        print("WARNING: no repos configured", file=sys.stderr)
     return repos
 
 

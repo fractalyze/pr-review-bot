@@ -26,3 +26,4 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           PR_REVIEW_SLACK_BOT_TOKEN: ${{ secrets.PR_REVIEW_SLACK_BOT_TOKEN }}
           SLACK_SUMMARY_CHANNEL_ID: ${{ secrets.SLACK_SUMMARY_CHANNEL_ID }}
+          MONITORED_REPOS: ${{ vars.MONITORED_REPOS }}

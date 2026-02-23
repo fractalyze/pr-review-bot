@@ -1,0 +1,8 @@
+# Copyright 2026 Fractalyze Inc. All rights reserved.
+
+# Local development fallback for MONITORED_REPOS.
+# Copy this file to config.yml and fill in the repo names.
+# In CI, set the GitHub Actions variable MONITORED_REPOS instead.
+repos:
+  - repo-name-1
+  - repo-name-2

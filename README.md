@@ -42,15 +42,18 @@ Each member repo:
 | `PR_REVIEW_SLACK_BOT_TOKEN` | Slack Bot OAuth Token (`xoxb-...`) |
 | `SLACK_SUMMARY_CHANNEL_ID` | Channel ID for daily summary (e.g., `C01234ABC`) |
 
-### 3. Configure Repos
+### 3. Configure Monitored Repos
 
-Edit `config.yml` to whitelist repos to monitor:
+Set a **repository variable** in GitHub Settings → Secrets and variables →
+Actions → Variables:
 
-```yaml
-repos:
-  - zkx
-  - riscv-witness
-```
+| Variable | Description |
+|----------|-------------|
+| `MONITORED_REPOS` | Comma-separated repo names (e.g., `zkx,riscv-witness`) |
+
+For local development, copy `config.yml.example` to `config.yml` and fill in
+the repo names. The scripts read `MONITORED_REPOS` env var first, then fall
+back to `config.yml`.
 
 ### 4. Deploy Caller Workflows
 
