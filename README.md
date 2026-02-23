@@ -8,21 +8,17 @@ Slack notification bot for pending PR reviews in the fractalyze org.
   individual DMs to reviewers and a summary to #pr-reviews channel
 - **Real-time Notification**: when a reviewer is assigned to a PR, sends a
   Slack DM immediately
-- **Comment Re-request**: post `/re-request @alice @bob` on a PR to
-  re-request reviews via GitHub API and notify via Slack DM
 
 ## Architecture
 
 ```
 fractalyze/pr-review-bot (this repo)
 ├── Morning Summary: cron → scan whitelisted repos → Slack DMs + channel table
-├── Re-request Notify: per-repo caller workflow → reusable workflow → Slack DM
-└── Comment Re-request: /re-request comment → API review request + Slack DM
+└── Re-request Notify: per-repo caller workflow → reusable workflow → Slack DM
 
 Each member repo:
-└── .github/workflows/pr-review-notify.yml (caller, ~30 lines)
-    ├── pull_request: [review_requested] → real-time DM
-    └── issue_comment: [created] → /re-request handling
+└── .github/workflows/pr-review-notify.yml (caller, ~20 lines)
+    └── pull_request: [review_requested] → real-time DM
 ```
 
 ## Setup
@@ -75,24 +71,9 @@ Runs automatically on weekdays at 9 AM KST. Trigger manually:
 gh workflow run morning-summary.yml
 ```
 
-### Re-request Review
-
-Comment on a PR:
-
-```
-/re-request @alice
-/re-request @alice @bob
-```
-
-The bot will:
-1. Call GitHub API to formally request review
-2. Send Slack DMs to each reviewer
-3. Add a 👀 reaction to confirm processing
-
 ## Verification
 
 1. `workflow_dispatch` → morning-summary → check DMs and channel
 2. Create test PR → add reviewer → verify DM arrives (~1 min)
 3. Re-request review (↻ button) → verify DM arrives
-4. Comment `/re-request @user` → verify review request + DM + 👀 reaction
-5. Check Actions step summary for unmapped users
+4. Check Actions step summary for unmapped users

@@ -148,7 +148,7 @@ def individual_dm_blocks(
 
 
 # ---------------------------------------------------------------------------
-# Re-request DM (real-time, triggered by review_requested or /re-request)
+# Re-request DM (real-time, triggered by review_requested)
 # ---------------------------------------------------------------------------
 
 def rerequest_dm_blocks(

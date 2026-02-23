@@ -44,10 +44,6 @@ def _get(path: str) -> Any:
     return _request("GET", path)
 
 
-def _post(path: str, body: dict[str, Any]) -> Any:
-    return _request("POST", path, body=body)
-
-
 def _paginate(path: str) -> list[Any]:
     """Fetch all pages from a paginated GitHub API endpoint."""
     results: list[Any] = []
@@ -93,23 +89,3 @@ def get_requested_reviewers(
 def get_user_info(login: str) -> dict[str, Any]:
     """Get public user profile information."""
     return _get(f"/users/{login}")
-
-
-def request_reviewers(
-    owner: str, repo: str, pr_number: int, reviewers: list[str]
-) -> dict[str, Any]:
-    """Request reviewers on a pull request."""
-    return _post(
-        f"/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers",
-        {"reviewers": reviewers},
-    )
-
-
-def add_comment_reaction(
-    owner: str, repo: str, comment_id: int, reaction: str = "eyes"
-) -> dict[str, Any]:
-    """Add a reaction to an issue comment."""
-    return _post(
-        f"/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
-        {"content": reaction},
-    )
