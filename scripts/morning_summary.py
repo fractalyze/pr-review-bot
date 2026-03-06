@@ -1,6 +1,6 @@
 # Copyright 2026 Fractalyze Inc. All rights reserved.
 
-"""Morning summary: scan all org repos and send DMs + channel summary."""
+"""Morning summary: scan all org repos and post channel summary."""
 
 from __future__ import annotations
 
@@ -35,18 +35,13 @@ def _load_repo_whitelist() -> list[str]:
     return repos
 
 
-def _collect_pending_reviews() -> (
-    tuple[dict[str, list[dict]], dict[str, list[dict]]]
-):
+def _collect_pending_reviews() -> dict[str, list[dict]]:
     """Scan whitelisted repos and collect pending review information.
 
     Returns:
-        (pending_by_repo, pending_by_reviewer)
-        - pending_by_repo: {repo_full_name: [pr_info, ...]}
-        - pending_by_reviewer: {github_login: [pr_info, ...]}
+        pending_by_repo: {repo_full_name: [pr_info, ...]}
     """
     pending_by_repo: dict[str, list[dict]] = defaultdict(list)
-    pending_by_reviewer: dict[str, list[dict]] = defaultdict(list)
 
     repo_names = _load_repo_whitelist()
     print(f"Scanning {len(repo_names)} whitelisted repositories in {ORG}...")
@@ -80,49 +75,28 @@ def _collect_pending_reviews() -> (
             if not reviewer_logins:
                 continue
 
-            pr_info = {
+            pending_by_repo[repo_name].append({
                 "number": pr["number"],
                 "title": pr["title"],
                 "url": pr["html_url"],
                 "author": pr["user"]["login"],
                 "created_at": pr["created_at"],
                 "reviewers": reviewer_logins,
-            }
+            })
 
-            pending_by_repo[repo_name].append(pr_info)
-            for login in reviewer_logins:
-                pending_by_reviewer[login].append(
-                    {**pr_info, "repo": repo_name}
-                )
-
-    return dict(pending_by_repo), dict(pending_by_reviewer)
+    return dict(pending_by_repo)
 
 
-def _send_individual_dms(
-    pending_by_reviewer: dict[str, list[dict]],
+def _build_slack_map(
+    pending_by_repo: dict[str, list[dict]],
 ) -> dict[str, str | None]:
-    """Send morning DMs to each reviewer. Returns the slack_map used."""
-    slack_map: dict[str, str | None] = {}
-
-    for login, prs in pending_by_reviewer.items():
-        slack_id = user_mapper.resolve(login)
-        slack_map[login] = slack_id
-
-        if slack_id is None:
-            continue
-
-        prs_by_repo: dict[str, list[dict]] = defaultdict(list)
+    """Resolve all GitHub logins (authors + reviewers) to Slack user IDs."""
+    logins: set[str] = set()
+    for prs in pending_by_repo.values():
         for pr in prs:
-            prs_by_repo[pr["repo"]].append(pr)
-
-        blocks = format_slack.individual_dm_blocks(login, dict(prs_by_repo))
-        try:
-            slack_client.send_dm(slack_id, blocks, text=f"You have {len(prs)} PRs awaiting review")
-            print(f"Sent DM to {login} ({slack_id}): {len(prs)} PRs")
-        except Exception as e:
-            print(f"WARNING: failed to send DM to {login}: {e}", file=sys.stderr)
-
-    return slack_map
+            logins.add(pr["author"])
+            logins.update(pr["reviewers"])
+    return {login: user_mapper.resolve(login) for login in logins}
 
 
 def _send_channel_summary(
@@ -146,13 +120,13 @@ def _send_channel_summary(
 
 
 def main() -> None:
-    pending_by_repo, pending_by_reviewer = _collect_pending_reviews()
+    pending_by_repo = _collect_pending_reviews()
 
-    if not pending_by_reviewer:
+    if not pending_by_repo:
         print("No pending reviews found. Nothing to send.")
         return
 
-    slack_map = _send_individual_dms(pending_by_reviewer)
+    slack_map = _build_slack_map(pending_by_repo)
     _send_channel_summary(pending_by_repo, slack_map)
 
     print("Morning summary complete.")

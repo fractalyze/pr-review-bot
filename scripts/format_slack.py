@@ -59,6 +59,19 @@ def _days_ago(opened_at: str) -> str:
     return f"{days} days ago"
 
 
+def _age_indicator(created_at: str) -> str:
+    """Return a colored square emoji based on PR age."""
+    opened = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    days = (datetime.now(timezone.utc) - opened).days
+    if days <= 1:
+        return ":large_green_square:"
+    if days <= 3:
+        return ":large_yellow_square:"
+    if days <= 6:
+        return ":large_orange_square:"
+    return ":large_red_square:"
+
+
 # ---------------------------------------------------------------------------
 # Channel summary (morning, posted to #pr-reviews)
 # ---------------------------------------------------------------------------
@@ -78,6 +91,7 @@ def channel_summary_blocks(
 
     total_prs = 0
     total_repos = 0
+    reviewer_counts: dict[str, int] = {}
 
     for repo, prs in sorted(pending_by_repo.items()):
         if not prs:
@@ -87,18 +101,40 @@ def channel_summary_blocks(
 
         lines = [f"*{repo}* \u2014 {len(prs)} pending review{'s' if len(prs) > 1 else ''}"]
         for pr in prs:
+            indicator = _age_indicator(pr["created_at"])
+            age = _days_ago(pr["created_at"])
+            author = _format_reviewer(pr["author"], slack_map.get(pr["author"]))
             reviewers = ", ".join(
                 _format_reviewer(r, slack_map.get(r)) for r in pr["reviewers"]
             )
             lines.append(
-                f"\u2022 <{pr['url']}|#{pr['number']} {pr['title']}>"
-                f" \u2014 waiting on {reviewers}"
+                f"{indicator} <{pr['url']}|#{pr['number']} {pr['title']}>"
             )
+            lines.append(
+                f"    by {author} \u00b7 opened {age} \u00b7 waiting on {reviewers}"
+            )
+
+            for r in pr["reviewers"]:
+                reviewer_counts[r] = reviewer_counts.get(r, 0) + 1
+
         blocks.append(_section("\n".join(lines)))
         blocks.append(_divider())
 
     if blocks and blocks[-1]["type"] == "divider":
         blocks.pop()
+
+    # Reviewer leaderboard (separated from repo sections)
+    if reviewer_counts:
+        blocks.append(_divider())
+        sorted_reviewers = sorted(
+            reviewer_counts.items(), key=lambda x: x[1], reverse=True
+        )
+        leaderboard_lines = [":eyes: *Reviewer Leaderboard*"]
+        for login, count in sorted_reviewers:
+            name = _format_reviewer(login, slack_map.get(login))
+            pr_word = "PR" if count == 1 else "PRs"
+            leaderboard_lines.append(f"{name} \u2014 {count} {pr_word} pending")
+        blocks.append(_section("\n".join(leaderboard_lines)))
 
     repo_word = "repo" if total_repos == 1 else "repos"
     blocks.append(
@@ -107,43 +143,6 @@ def channel_summary_blocks(
             f" across {total_repos} {repo_word}"
         )
     )
-    return blocks
-
-
-# ---------------------------------------------------------------------------
-# Individual DM (morning, one per reviewer)
-# ---------------------------------------------------------------------------
-
-def individual_dm_blocks(
-    reviewer_login: str,
-    prs_by_repo: dict[str, list[dict]],
-) -> list[dict]:
-    """Build blocks for a reviewer's morning DM.
-
-    Args:
-        reviewer_login: GitHub login of the reviewer
-        prs_by_repo: {repo_full_name: [{number, title, url, author, created_at}]}
-    """
-    total = sum(len(prs) for prs in prs_by_repo.values())
-    blocks: list[dict] = [
-        _header(f"Good morning! You have {total} PR{'s' if total != 1 else ''} awaiting review"),
-    ]
-
-    for repo, prs in sorted(prs_by_repo.items()):
-        for pr in prs:
-            age = _days_ago(pr["created_at"])
-            blocks.append(
-                _section(
-                    f"*{repo}*\n"
-                    f"<{pr['url']}|#{pr['number']} {pr['title']}>\n"
-                    f"Opened by @{pr['author']} \u00b7 {age}"
-                )
-            )
-            blocks.append(_divider())
-
-    if blocks and blocks[-1]["type"] == "divider":
-        blocks.pop()
-
     return blocks
 
 
