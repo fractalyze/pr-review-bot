@@ -48,26 +48,43 @@ def _format_reviewer(login: str, slack_id: str | None) -> str:
     return f"@{login}"
 
 
-def _days_ago(opened_at: str) -> str:
+def _working_days_since(opened_at: str) -> int:
+    """Count working days (Mon-Fri) between opened_at and now, excluding weekends."""
     opened = datetime.fromisoformat(opened_at.replace("Z", "+00:00"))
-    delta = datetime.now(timezone.utc) - opened
-    days = delta.days
+    now = datetime.now(timezone.utc)
+    count = 0
+    day = opened.date() + timedelta(days=1)
+    today = now.date()
+    while day <= today:
+        if day.weekday() < 5:  # Mon=0 .. Fri=4
+            count += 1
+        day += timedelta(days=1)
+    return count
+
+
+def _days_ago(opened_at: str) -> str:
+    days = _working_days_since(opened_at)
     if days == 0:
         return "today"
     if days == 1:
-        return "1 day ago"
-    return f"{days} days ago"
+        return "1 working day ago"
+    return f"{days} working days ago"
 
 
 def _age_indicator(created_at: str) -> str:
-    """Return a colored square emoji based on PR age."""
-    opened = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-    days = (datetime.now(timezone.utc) - opened).days
+    """Return a colored square emoji based on PR age in working days.
+
+    0-1 working days: green (fresh)
+    2 working days:   yellow (attention)
+    3 working days:   orange (warning)
+    4+ working days:  red (urgent)
+    """
+    days = _working_days_since(created_at)
     if days <= 1:
         return ":large_green_square:"
-    if days <= 3:
+    if days == 2:
         return ":large_yellow_square:"
-    if days <= 6:
+    if days == 3:
         return ":large_orange_square:"
     return ":large_red_square:"
 
