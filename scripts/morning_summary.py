@@ -75,12 +75,19 @@ def _collect_pending_reviews() -> dict[str, list[dict]]:
             if not reviewer_logins:
                 continue
 
+            # Use the ready_for_review timestamp if the PR was once a
+            # draft; otherwise fall back to the PR creation time.
+            ready_at = github_client.get_ready_for_review_at(
+                owner, name, pr["number"]
+            )
+            opened_at = ready_at or pr["created_at"]
+
             pending_by_repo[repo_name].append({
                 "number": pr["number"],
                 "title": pr["title"],
                 "url": pr["html_url"],
                 "author": pr["user"]["login"],
-                "created_at": pr["created_at"],
+                "created_at": opened_at,
                 "reviewers": reviewer_logins,
             })
 

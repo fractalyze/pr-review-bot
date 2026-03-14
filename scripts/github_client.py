@@ -86,6 +86,29 @@ def get_requested_reviewers(
     return _get(f"/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers")
 
 
+def get_pr(owner: str, repo: str, pr_number: int) -> dict[str, Any]:
+    """Get a single pull request."""
+    return _get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
+
+
+def get_ready_for_review_at(
+    owner: str, repo: str, pr_number: int
+) -> str | None:
+    """Return the timestamp when a PR was marked ready for review.
+
+    Uses the timeline API to find the ``ready_for_review`` event.
+    Returns ``None`` if the PR was never a draft.
+    """
+    events = _paginate(
+        f"/repos/{owner}/{repo}/issues/{pr_number}/timeline"
+    )
+    ready_at = None
+    for event in events:
+        if event.get("event") == "ready_for_review":
+            ready_at = event.get("created_at")
+    return ready_at
+
+
 def get_user_info(login: str) -> dict[str, Any]:
     """Get public user profile information."""
     return _get(f"/users/{login}")

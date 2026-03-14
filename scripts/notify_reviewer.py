@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import sys
 
-from scripts import slack_client, user_mapper, format_slack
+from scripts import github_client, slack_client, user_mapper, format_slack
 
 
 def main() -> None:
@@ -17,6 +17,13 @@ def main() -> None:
     repo_name = os.environ["REPO_NAME"]
     reviewer_login = os.environ["REVIEWER_LOGIN"]
     requested_by = os.environ["REQUESTED_BY_LOGIN"]
+
+    # Skip draft PRs — no notification needed until ready for review.
+    owner, repo = repo_name.split("/", 1)
+    pr_data = github_client.get_pr(owner, repo, int(pr_number))
+    if pr_data.get("draft"):
+        print(f"PR {repo_name}#{pr_number} is a draft, skipping notification.")
+        return
 
     slack_id = user_mapper.resolve(reviewer_login)
     if slack_id is None:
