@@ -49,11 +49,25 @@ def _format_reviewer(login: str, slack_id: str | None) -> str:
 
 
 def _working_days_since(opened_at: str) -> int:
-    """Count working days (Mon-Fri) between opened_at and now, excluding weekends."""
+    """Count working days (Mon-Fri) between opened_at and now, excluding weekends.
+
+    If the PR was opened on a weekend, it is treated as opened on the following
+    Monday so that the first business day shows "today" instead of "1 working
+    day ago".
+    """
     opened = datetime.fromisoformat(opened_at.replace("Z", "+00:00"))
     now = datetime.now(timezone.utc)
+
+    opened_date = opened.date()
+    # Snap weekend openings to the next Monday.
+    weekday = opened_date.weekday()
+    if weekday == 5:  # Saturday → Monday
+        opened_date += timedelta(days=2)
+    elif weekday == 6:  # Sunday → Monday
+        opened_date += timedelta(days=1)
+
     count = 0
-    day = opened.date() + timedelta(days=1)
+    day = opened_date + timedelta(days=1)
     today = now.date()
     while day <= today:
         if day.weekday() < 5:  # Mon=0 .. Fri=4
@@ -65,7 +79,7 @@ def _working_days_since(opened_at: str) -> int:
 def _days_ago(opened_at: str) -> str:
     days = _working_days_since(opened_at)
     if days == 0:
-        return "today"
+        return "new"
     if days == 1:
         return "1 working day ago"
     return f"{days} working days ago"
