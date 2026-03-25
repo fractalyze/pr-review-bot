@@ -17,7 +17,7 @@ ORG = "fractalyze"
 CONFIG_PATH = Path(__file__).parent.parent / "config.yml"
 
 
-def _load_repo_whitelist() -> list[str]:
+def load_repo_whitelist() -> list[str]:
     """Load whitelisted repo names from env var or config.yml."""
     env_repos = os.environ.get("MONITORED_REPOS", "")
     if env_repos:
@@ -35,7 +35,7 @@ def _load_repo_whitelist() -> list[str]:
     return repos
 
 
-def _collect_pending_reviews() -> dict[str, list[dict]]:
+def collect_pending_reviews() -> dict[str, list[dict]]:
     """Scan whitelisted repos and collect pending review information.
 
     Returns:
@@ -43,7 +43,7 @@ def _collect_pending_reviews() -> dict[str, list[dict]]:
     """
     pending_by_repo: dict[str, list[dict]] = defaultdict(list)
 
-    repo_names = _load_repo_whitelist()
+    repo_names = load_repo_whitelist()
     print(f"Scanning {len(repo_names)} whitelisted repositories in {ORG}...")
 
     for name in repo_names:
@@ -94,7 +94,7 @@ def _collect_pending_reviews() -> dict[str, list[dict]]:
     return dict(pending_by_repo)
 
 
-def _build_slack_map(
+def build_slack_map(
     pending_by_repo: dict[str, list[dict]],
 ) -> dict[str, str | None]:
     """Resolve all GitHub logins (authors + reviewers) to Slack user IDs."""
@@ -106,7 +106,7 @@ def _build_slack_map(
     return {login: user_mapper.resolve(login) for login in logins}
 
 
-def _send_channel_summary(
+def send_channel_summary(
     pending_by_repo: dict[str, list[dict]],
     slack_map: dict[str, str | None],
 ) -> None:
@@ -127,14 +127,14 @@ def _send_channel_summary(
 
 
 def main() -> None:
-    pending_by_repo = _collect_pending_reviews()
+    pending_by_repo = collect_pending_reviews()
 
     if not pending_by_repo:
         print("No pending reviews found. Nothing to send.")
         return
 
-    slack_map = _build_slack_map(pending_by_repo)
-    _send_channel_summary(pending_by_repo, slack_map)
+    slack_map = build_slack_map(pending_by_repo)
+    send_channel_summary(pending_by_repo, slack_map)
 
     print("Morning summary complete.")
 
