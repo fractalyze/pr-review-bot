@@ -6,6 +6,8 @@ Slack notification bot for pending PR reviews in the fractalyze org.
 
 - **Morning Summary** (weekdays 9 AM KST): scans whitelisted repos, sends
   individual DMs to reviewers and a summary to #pr-reviews channel
+- **On-demand Summary** (`/show-pr`): type `/show-pr` in #pr-reviews to
+  trigger the same summary instantly
 - **Real-time Notification**: when a reviewer is assigned to a PR, sends a
   Slack DM immediately
 
@@ -14,6 +16,7 @@ Slack notification bot for pending PR reviews in the fractalyze org.
 ```
 fractalyze/pr-review-bot (this repo)
 ├── Morning Summary: cron → scan whitelisted repos → Slack DMs + channel table
+├── Slack App: /show-pr command → on-demand summary → channel table
 └── Re-request Notify: per-repo caller workflow → reusable workflow → Slack DM
 
 Each member repo:
@@ -26,9 +29,15 @@ Each member repo:
 ### 1. Slack App
 
 1. Create a new Slack App at [api.slack.com/apps](https://api.slack.com/apps)
-2. Add Bot Token Scopes: `chat:write`, `users:read`, `users:read.email`
-3. Install to workspace and copy the Bot Token (`xoxb-...`)
-4. Invite bot to the summary channel: `/invite @pr-review-bot`
+2. Enable **Socket Mode** (Settings → Socket Mode → toggle on)
+   - Generate an App-Level Token with `connections:write` scope → copy `xapp-...`
+3. Add Bot Token Scopes (OAuth & Permissions):
+   `chat:write`, `users:read`, `users:read.email`, `commands`
+4. Create Slash Command (Slash Commands → Create New Command):
+   - Command: `/show-pr`
+   - Description: `Show pending PR reviews`
+5. Install to workspace and copy the Bot Token (`xoxb-...`)
+6. Invite bot to the summary channel: `/invite @pr-review-bot`
 
 ### 2. GitHub Secrets (org-level)
 
@@ -36,6 +45,7 @@ Each member repo:
 |--------|-------------|
 | `GH_PAT` | Fine-grained PAT with `repo`, `read:org`, `read:user` scopes |
 | `PR_REVIEW_SLACK_BOT_TOKEN` | Slack Bot OAuth Token (`xoxb-...`) |
+| `SLACK_APP_TOKEN` | Slack App-Level Token for Socket Mode (`xapp-...`) |
 | `SLACK_SUMMARY_CHANNEL_ID` | Channel ID for daily summary (e.g., `C01234ABC`) |
 
 ### 3. Configure Monitored Repos
@@ -69,6 +79,25 @@ Runs automatically on weekdays at 9 AM KST. Trigger manually:
 
 ```bash
 gh workflow run morning-summary.yml
+```
+
+### On-demand Summary (Slack)
+
+Type `/show-pr` in `#pr-reviews` to get the current PR summary instantly.
+
+### Running the Slack App
+
+The Slack app runs as a long-lived process using Socket Mode (no public URL
+needed):
+
+```bash
+export GH_PAT=ghp_...
+export PR_REVIEW_SLACK_BOT_TOKEN=xoxb-...
+export SLACK_APP_TOKEN=xapp-...
+export SLACK_SUMMARY_CHANNEL_ID=C01234ABC
+export MONITORED_REPOS=zkx,riscv-witness
+
+python -m scripts.slack_app
 ```
 
 ## Verification
